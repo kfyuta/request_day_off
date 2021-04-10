@@ -1,3 +1,33 @@
+/**
+ * エントリーポイント
+ */
+function main() {
+  const ui = SpreadsheetApp.getUi();
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const targetSheet  = ss.getActiveSheet();
+  const confirmation = ui.alert(
+    '確認',
+    `シート：${targetSheet.getName()}　の振休申請を作成しますか？`,
+    ui.ButtonSet.YES_NO_CANCEL
+  );
+  if (confirmation === ui.Button.NO || confirmation === ui.Button.CANCEL) {
+    return;
+  }
+
+  const result = searchCompensationDaysOff(targetSheet);
+  if (result.createFlag) {
+    updateAppForm(result);
+  } else {
+    ui.alert("振替休日を取得していないため、処理を終了しました。");
+    return;
+  }
+}
+
+
+/**
+ * スプレッドシートを開いたときに実行される。
+ * スプレッドシートのメニューバーにスクリプト選択メニューを追加する。
+ */
 function onOpen(){
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   ss.addMenu("スクリプト", [{name: "振休申請書作成", functionName: "main"}]);
@@ -14,7 +44,8 @@ function test() {
 }
 
 /**
- * @return "_"区切りのタイムスタンプ
+ * @return {string} yyyyMMddhhmm形式のタイムスタンプ
+ * return the timestamp which is formatted 'yyyyMMddhhmm'.
  */
 function getTimeStamp() {
   const now = new Date();
@@ -23,10 +54,17 @@ function getTimeStamp() {
   const date = now.getDate().toString().padStart(2, "0");
   const hour = now.getHours().toString().padStart(2, "0");
   const minute = now.getMinutes().toString().padStart(2, "0");
-  return `${year}_${month}_${date}_${hour}_${minute}`;
+  return `${year}${month}${date}${hour}${minute}`;
 }
 
-const searchCompensationDaysOff = (sheet) => {
+/**
+ * 振替元と振替休日を取得する
+ * @param {object} 検索対象のシート
+ * @return {object} 振替休日未取得の場合、createFlagにfalseを設定し返却する
+ * When you didn't get compensation day-off, the return object.createFlag is False.
+ * When you got compensation day-off, the return object.createFlag is True.
+ */
+function searchCompensationDaysOff(sheet){
   // 隠し列から振替元と振替先を取得
   const searchTarget = sheet.getRange(10, 17, 31, 2).getValues();
   const origin = [];
@@ -51,7 +89,7 @@ const searchCompensationDaysOff = (sheet) => {
  * @param {String} シート名
  * @param {String} GoogleDriveのフォルダID
  */
-const createPDF = (ssid, sheetName, folderId) => {
+function createPDF(ssid, sheetName, folderId) {
   const spreadSheet = SpreadsheetApp.openById(ssid);
   const targetSheet = spreadSheet.getSheetByName(sheetName);
   const token = ScriptApp.getOAuthToken();
@@ -84,7 +122,12 @@ const createPDF = (ssid, sheetName, folderId) => {
   return DriveApp.getFolderById(folderId).createFile(response).setName(fileName + ".pdf");
 }
 
-const updateAppForm = (result) => {
+/**
+ * 振替休日申請書シートをresultの値で更新し、PDFを出力
+ * @param {object} searchCmpensationDayOffの戻り値
+ * @return {void}
+ */
+function updateAppForm(result) {
   // 更新対象を取得
   const appForm = SpreadsheetApp.openById(APPFORM_ID).getSheetByName("振替休日申請書");
 
@@ -100,31 +143,6 @@ const updateAppForm = (result) => {
   appForm.getRange(11, 14, 5, 1).setValues(result.destination);
   appForm.getRange(4, 15).setValue("TODO");
 
-  // PDF出力
+  // PDF出力し、GoogleDriveに保存する
   createPDF(APPFORM_ID, APPFORMSHEET_NAME, FOLDER_ID);
-}
-
-/**
- * エントリーポイント
- */
-const main = () => {
-  const ui = SpreadsheetApp.getUi();
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const targetSheet  = ss.getActiveSheet();
-  const confirmation = ui.alert(
-    '確認',
-    `シート：${targetSheet.getName()}　の振休申請を作成しますか？`,
-    ui.ButtonSet.YES_NO_CANCEL
-  );
-  if (confirmation === ui.Button.NO || confirmation === ui.Button.CANCEL) {
-    return;
-  }
-
-  const result = searchCompensationDaysOff(targetSheet);
-  if (result.createFlag) {
-    updateAppForm(result);
-  } else {
-    ui.alert("振替休日を取得していないため、処理を終了しました。");
-    return;
-  }
 }
