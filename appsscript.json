@@ -1,7 +1,15 @@
 {
   "timeZone": "Asia/Tokyo",
-  "dependencies": {
-  },
   "exceptionLogging": "STACKDRIVER",
-  "runtimeVersion": "V8"
+  "runtimeVersion": "V8",
+  "dependencies": {},
+  "sheets": {
+    "macros": [
+      {
+        "menuName": "無題のマクロ",
+        "functionName": "myFunction",
+        "defaultShortcut": "Ctrl+Alt+Shift+1"
+      }
+    ]
+  }
 }

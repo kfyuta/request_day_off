@@ -1,6 +1,16 @@
-const onOpen = () => {
+function onOpen(){
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  appForm.addMenu("スクリプト", [{name: "振休申請書作成", functionName: "main"}]);
+  ss.addMenu("スクリプト", [{name: "振休申請書作成", functionName: "main"}]);
+}
+
+function test() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const querySheet = ss.getSheetByName("QUERY");
+  const sh = "2104"
+  const d = 13
+  const query = `=query('${sh}'!B10:J40, "select * where B = ${d}")`;
+  querySheet.getRange('A2').setFormula(query);
+  Logger.log(ss.getSheetByName("QUERY").getDataRange().getValues());
 }
 
 /**
@@ -36,6 +46,11 @@ const searchCompensationDaysOff = (sheet) => {
   return result;
 }
 
+/**
+ * @param {String} SpreadsheetID
+ * @param {String} シート名
+ * @param {String} GoogleDriveのフォルダID
+ */
 const createPDF = (ssid, sheetName, folderId) => {
   const spreadSheet = SpreadsheetApp.openById(ssid);
   const targetSheet = spreadSheet.getSheetByName(sheetName);
@@ -89,6 +104,9 @@ const updateAppForm = (result) => {
   createPDF(APPFORM_ID, APPFORMSHEET_NAME, FOLDER_ID);
 }
 
+/**
+ * エントリーポイント
+ */
 const main = () => {
   const ui = SpreadsheetApp.getUi();
   const ss = SpreadsheetApp.getActiveSpreadsheet();
